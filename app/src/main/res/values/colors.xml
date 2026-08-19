@@ -1,0 +1,10 @@
+<resources>
+    <color name="crypto_bg">#080A0E</color>
+    <color name="crypto_panel">#10141B</color>
+    <color name="crypto_line">#202733</color>
+    <color name="crypto_text">#F4F7FA</color>
+    <color name="crypto_muted">#8C97A8</color>
+    <color name="crypto_accent">#7CFFB2</color>
+    <color name="crypto_warning">#FFC857</color>
+    <color name="crypto_danger">#FF6B7A</color>
+</resources>
