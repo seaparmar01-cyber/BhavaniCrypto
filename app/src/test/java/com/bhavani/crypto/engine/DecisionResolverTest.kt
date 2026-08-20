@@ -17,7 +17,7 @@ class DecisionResolverTest {
         val d = resolver.resolve(
             100.0, (1..20).map { it.toDouble() },
             emptyList(), emptyList(), emptyList(), Book(), DerivativesSnapshot(),
-            0.0, 0.0, true, System.currentTimeMillis()
+            0.0, 0.0, true, System.currentTimeMillis(), System.currentTimeMillis()
         )
         assertEquals(DecisionState.WAIT, d.state)
     }
@@ -27,7 +27,7 @@ class DecisionResolverTest {
         val d = resolver.resolve(
             100.0, (1..40).map { it.toDouble() },
             emptyList(), emptyList(), emptyList(), Book(), DerivativesSnapshot(),
-            0.0, 0.0, false, System.currentTimeMillis()
+            0.0, 0.0, false, System.currentTimeMillis(), System.currentTimeMillis()
         )
         assertEquals(DecisionState.WAIT, d.state)
     }
@@ -47,7 +47,7 @@ class DecisionResolverTest {
         )
         val d = resolver.resolve(
             180.0, history, candles, candles, candles, book,
-            DerivativesSnapshot(updatedAt = now), 10.0, 0.8, true, now
+            DerivativesSnapshot(updatedAt = now), 10.0, 0.8, true, now, now
         )
         assertTrue(d.score >= 70)
         assertEquals(DecisionState.LONG, d.state)
@@ -59,12 +59,36 @@ class DecisionResolverTest {
         val history = (1..60).map { it.toDouble() }
         val candles = listOf(Candle(old, 1.0, 2.0, 0.5, 1.8, 10.0))
         val book = Book(bid = 1.79, ask = 1.80, bidQty = 10.0, askQty = 10.0, time = old)
+        val now = System.currentTimeMillis()
         val d = resolver.resolve(
             1.8, history, candles, candles, candles, book,
-            DerivativesSnapshot(), 0.0, 0.0, true, System.currentTimeMillis()
+            DerivativesSnapshot(), 0.0, 0.0, true, old, now
         )
         assertEquals(DecisionState.WAIT, d.state)
         assertTrue(d.reason.contains("stale", ignoreCase = true))
+    }
+
+    @Test
+    fun liveTickKeepsCoreEvidenceFreshWhenLastClosedCandleIsOlderThanFiveSeconds() {
+        val now = System.currentTimeMillis()
+        val closedCandleTime = now - 90_000L
+        val history = (1..80).map { it.toDouble() }
+        val candles = listOf(
+            Candle(closedCandleTime, 170.0, 181.0, 169.0, 180.0, 100.0),
+            Candle(now - 30_000L, 180.0, 182.0, 179.0, 181.0, 100.0)
+        )
+        val book = Book(
+            bid = 180.99, bidQty = 100.0, ask = 181.01, askQty = 1.0,
+            bids = listOf(BookLevel(180.99, 100.0)),
+            asks = listOf(BookLevel(181.01, 1.0)),
+            time = now
+        )
+        val d = resolver.resolve(
+            181.0, history, candles, candles, candles, book,
+            DerivativesSnapshot(updatedAt = now), 10.0, 0.8, true, now, now
+        )
+        assertTrue(d.evidence.freshness > 0.9)
+        assertTrue(!d.reason.contains("Market evidence is stale", ignoreCase = true))
     }
 
     @Test
@@ -82,7 +106,7 @@ class DecisionResolverTest {
         )
         val d = resolver.resolve(
             180.0, history, candles, candles, candles, book,
-            DerivativesSnapshot(updatedAt = now), -10.0, 0.8, true, now
+            DerivativesSnapshot(updatedAt = now), -10.0, 0.8, true, now, now
         )
         assertTrue(d.state != DecisionState.LONG)
     }

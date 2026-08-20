@@ -25,15 +25,20 @@ class DecisionResolver {
         cvdDelta: Double,
         crossAssetRegime: Double,
         connected: Boolean,
+        marketPriceUpdatedAt: Long = 0L,
         now: Long = System.currentTimeMillis()
     ): Decision {
         if (!connected || !price.isFinite() || price <= 0.0 || history.size < MIN_HISTORY) {
             return wait("Waiting for enough fresh market evidence.", 0.0, now)
         }
 
+        // Candle timestamps represent the start of a completed bucket, so a healthy
+        // live feed can legitimately have a candle timestamp older than 5 seconds.
+        // Core freshness must therefore use the live price/tick timestamp plus the
+        // live order-book timestamp, not the age of the last completed candle.
         val requiredAges = listOf(
-            book.time,
-            candles1m.lastOrNull()?.time ?: 0L
+            marketPriceUpdatedAt,
+            book.time
         ).map { timestamp ->
             if (timestamp > 0L) (now - timestamp).coerceAtLeast(0L) else Long.MAX_VALUE
         }

@@ -17,6 +17,7 @@ class CryptoEngine {
     private val flowWindows = Asset.entries.associateWith { ArrayDeque<Double>() }.toMutableMap()
     private val books = Asset.entries.associateWith { Book() }.toMutableMap()
     private val derivatives = Asset.entries.associateWith { DerivativesSnapshot() }.toMutableMap()
+    private val lastPriceUpdateAt = Asset.entries.associateWith { 0L }.toMutableMap()
 
     private val _states = MutableStateFlow(Asset.entries.associateWith { AssetState(it) })
     val states: StateFlow<Map<Asset, AssetState>> = _states
@@ -30,6 +31,7 @@ class CryptoEngine {
         appendAll(candles1m.getValue(asset), snapshot.candles1m, 240)
         appendAll(candles5m.getValue(asset), snapshot.candles5m, 180)
         appendAll(candles15m.getValue(asset), snapshot.candles15m, 120)
+        lastPriceUpdateAt[asset] = snapshot.fetchedAt
         update(asset, price = snapshot.price, lastUpdate = snapshot.fetchedAt)
     }
 
@@ -51,6 +53,7 @@ class CryptoEngine {
         builders5m.getValue(asset).add(tick)?.let { append(candles5m.getValue(asset), it, 180) }
         builders15m.getValue(asset).add(tick)?.let { append(candles15m.getValue(asset), it, 120) }
 
+        lastPriceUpdateAt[asset] = tick.time
         update(asset, price = tick.price, lastUpdate = tick.time)
     }
 
@@ -124,6 +127,7 @@ class CryptoEngine {
             cvdDelta = flowPressure,
             crossAssetRegime = regime,
             connected = old.connected,
+            marketPriceUpdatedAt = lastPriceUpdateAt.getValue(asset),
             now = System.currentTimeMillis()
         )
 

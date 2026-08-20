@@ -19,6 +19,7 @@ import okhttp3.Request
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import java.io.Closeable
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -40,7 +41,9 @@ class BinancePublicFeed : Closeable {
     private var spotRetry = 0
     private var futuresRetry = 0
 
-    private val latestSpot = Asset.entries.associateWith { 0.0 }.toMutableMap()
+    private val latestSpot = ConcurrentHashMap<Asset, Double>().apply {
+        Asset.entries.forEach { put(it, 0.0) }
+    }
 
     private val _ticks = MutableSharedFlow<Tick>(extraBufferCapacity = 512)
     val ticks: SharedFlow<Tick> = _ticks
@@ -185,7 +188,7 @@ class BinancePublicFeed : Closeable {
         latestLiquidationBias[symbol] = (previous * 0.90 + signed.coerceIn(-100.0, 100.0) / 100.0 * 0.10)
     }
 
-    private val latestLiquidationBias = mutableMapOf<String, Double>()
+    private val latestLiquidationBias = ConcurrentHashMap<String, Double>()
 
 
     private fun fetchHistory() {
