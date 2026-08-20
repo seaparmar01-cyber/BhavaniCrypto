@@ -1,6 +1,5 @@
 package com.bhavani.crypto.engine
 
-import com.bhavani.crypto.model.Asset
 import com.bhavani.crypto.model.Book
 import com.bhavani.crypto.model.BookLevel
 import com.bhavani.crypto.model.Candle
@@ -16,7 +15,7 @@ class DecisionResolverTest {
     @Test
     fun insufficientDataWaits() {
         val d = resolver.resolve(
-            Asset.BTC, 100.0, (1..20).map { it.toDouble() },
+            100.0, (1..20).map { it.toDouble() },
             emptyList(), emptyList(), emptyList(), Book(), DerivativesSnapshot(),
             0.0, 0.0, true, System.currentTimeMillis()
         )
@@ -26,7 +25,7 @@ class DecisionResolverTest {
     @Test
     fun disconnectedWaits() {
         val d = resolver.resolve(
-            Asset.BTC, 100.0, (1..40).map { it.toDouble() },
+            100.0, (1..40).map { it.toDouble() },
             emptyList(), emptyList(), emptyList(), Book(), DerivativesSnapshot(),
             0.0, 0.0, false, System.currentTimeMillis()
         )
@@ -47,7 +46,7 @@ class DecisionResolverTest {
             time = now
         )
         val d = resolver.resolve(
-            Asset.BTC, 180.0, history, candles, candles, candles, book,
+            180.0, history, candles, candles, candles, book,
             DerivativesSnapshot(updatedAt = now), 10.0, 0.8, true, now
         )
         assertTrue(d.score >= 70)
@@ -61,7 +60,7 @@ class DecisionResolverTest {
         val candles = listOf(Candle(old, 1.0, 2.0, 0.5, 1.8, 10.0))
         val book = Book(bid = 1.79, ask = 1.80, bidQty = 10.0, askQty = 10.0, time = old)
         val d = resolver.resolve(
-            Asset.BTC, 1.8, history, candles, candles, candles, book,
+            1.8, history, candles, candles, candles, book,
             DerivativesSnapshot(), 0.0, 0.0, true, System.currentTimeMillis()
         )
         assertEquals(DecisionState.WAIT, d.state)
@@ -82,7 +81,7 @@ class DecisionResolverTest {
             time = now
         )
         val d = resolver.resolve(
-            Asset.BTC, 180.0, history, candles, candles, candles, book,
+            180.0, history, candles, candles, candles, book,
             DerivativesSnapshot(updatedAt = now), -10.0, 0.8, true, now
         )
         assertTrue(d.state != DecisionState.LONG)
