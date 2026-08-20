@@ -27,3 +27,9 @@ jobs:
 
       - name: Build and test
         run: gradle --no-daemon testDebugUnitTest assembleDebug
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: BhavaniCrypto-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
